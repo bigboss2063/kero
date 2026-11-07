@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"kero/internal/settings"
 )
 
 // zsh starts with a .zshenv of Kero's (ZDOTDIR), which sources the user's
@@ -26,7 +28,11 @@ func (d *Daemon) zshDir() string {
 // zshPrompts tells whether panes' shell is a zsh that marks its prompts;
 // tests set it.
 var zshPrompts = func() bool {
-	return runtime.GOOS != "windows" && shellName(userShell()) == "zsh"
+	if runtime.GOOS == "windows" {
+		return false
+	}
+	program, _, err := paneShell("", nil, settings.Load())
+	return err == nil && shellName(program) == "zsh"
 }
 
 // writeZshenv writes Kero's .zshenv in dir, putting bin first when set.
