@@ -122,10 +122,15 @@ type App struct {
 	lru        []string
 	refs       map[string]*ui.Handle // panes' terminals, and splits, by id
 	focus      map[string]string     // the pane the user is in, by session
+	keyPane    string                // the pane that has the keyboard
 	layoutDrag struct {              // the split whose divider is dragged
 		session, split string
 		ratio          float64 // where the pointer puts it, past its bounds
 	}
+	// pressHandle is the drag handle the pointer is pressing: it took the
+	// keyboard from the pane the user is in, and gives it back when the
+	// pointer lets go (#398).
+	pressHandle string
 
 	active   bool
 	focused  bool
@@ -356,6 +361,7 @@ func (a *App) setState(h *host, st proto.State) {
 			a.dropWeb(id)
 		}
 	}
+	a.focusGone()
 	a.quickChanged()
 	if a.session(a.selected) == nil {
 		a.reselect()
@@ -1014,7 +1020,7 @@ func (a *App) apply(s settings.Settings, save bool) {
 	if old.DockBadge != s.DockBadge {
 		a.notify(true)
 	}
-	if old.KeepAwake != s.KeepAwake {
+	if old.KeepAwake != s.KeepAwake || old.KeepDisplayOn != s.KeepDisplayOn {
 		a.keepAwake()
 		if a.tray != nil {
 			a.tray.SetMenu(a.trayMenu())
